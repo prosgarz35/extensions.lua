@@ -20,7 +20,7 @@ end
 local function dial_ext(target, cid)
     if not target or target == "" then return reject(1) end
     if cid then channel.CALLERID("num"):set(cid) end
-    app.dial("PJSIP/" .. target, 30, "Ttr")
+    app.dial(channel.PJSIP_DIAL_CONTACTS(target):get(), 30, "Ttr")
 end
 hints = { internal = {} }
 for i = 501, 520 do hints.internal["" .. i] = "PJSIP/" .. i end
