@@ -19,10 +19,8 @@ local function normalize_outbound(num)
 end
 local function dial_ext(target, cid)
     if not target or target == "" then return reject(1) end
-    local ds = channel.PJSIP_DIAL_CONTACTS(target):get()
-    if not ds or ds == "" then return reject(18) end
     if cid then channel.CALLERID("num"):set(cid) end
-    app.dial(ds, 30, "Ttr")
+    app.dial("PJSIP/" .. target, 30, "Ttr")
 end
 hints = { internal = {} }
 for i = 501, 520 do hints.internal["" .. i] = "PJSIP/" .. i end
