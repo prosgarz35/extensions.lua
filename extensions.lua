@@ -1,5 +1,4 @@
 package.path = package.path .. ";/etc/asterisk/?.lua"
-package.loaded["lists"] = nil
 local ok, lists = pcall(require, "lists")
 local blacklist = ok and lists.blacklist or {}
 local forbidden_outbound = ok and lists.forbidden_outbound or {}
@@ -14,7 +13,9 @@ end
 local function dial_ext(target, cid)
     if not target or target == "" then return reject(1) end
     if cid then channel.CALLERID("num"):set(cid) end
-    app.dial(channel.PJSIP_DIAL_CONTACTS(target):get(), 30, "Ttr")
+    local contacts = channel.PJSIP_DIAL_CONTACTS(target):get()
+    if not contacts or contacts == "" then return reject(20) end
+    app.dial(contacts, 30, "Ttr")
 end
 hints = { internal = {} }
 for i = 501, 520 do hints.internal["" .. i] = "PJSIP/" .. i end
