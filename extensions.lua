@@ -2,7 +2,7 @@ package.path = package.path .. ";/etc/asterisk/?.lua"
 local ok, lists = pcall(require, "lists")
 local blacklist = ok and lists.blacklist or {}
 local forbidden_outbound = ok and lists.forbidden_outbound or {}
-local function reject(cause) channel.HANGUPCAUSE:set(cause); app.hangup() end
+local function reject(cause) channel.HANGUPCAUSE:set(cause); app.Hangup() end
 local function normalize_outbound(num)
     local d = num:gsub("%D+", "")
     if #d == 11 then
@@ -15,13 +15,13 @@ local function dial_ext(target, cid)
     if cid then channel.CALLERID("num"):set(cid) end
     local contacts = channel.PJSIP_DIAL_CONTACTS(target):get()
     if not contacts or contacts == "" then return reject(20) end
-    app.dial(contacts, 30, "Ttr")
+    app.Dial(contacts, 30, "Tt")
 end
 hints = { internal = {} }
 for i = 501, 520 do hints.internal["" .. i] = "PJSIP/" .. i end
 extensions = {
     internal = {
-        ["555"] = function() app.confbridge("555", "default_bridge", "default_user", "default_menu") end,
+        ["555"] = function() app.ConfBridge("555", "default_bridge", "default_user", "default_menu") end,
         ["_5XX"] = function(_, e) dial_ext(e) end,
         ["_."] = function(_, e)
             local dialed = normalize_outbound(e)
@@ -30,7 +30,7 @@ extensions = {
             local trunk = channel.OUTBOUND_TRUNK:get()
             if not trunk or trunk == "" then return reject(38) end
             channel.CALLERID("name"):set(""); channel.CALLERID("num"):set(trunk)
-            app.dial("PJSIP/" .. dialed .. "@" .. trunk, 30, "Ttr")
+            app.Dial("PJSIP/" .. dialed .. "@" .. trunk, 30, "Tt")
         end,
     },
     external = {
