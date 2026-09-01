@@ -10,10 +10,10 @@ local function normalize_outbound(num)
     elseif #d == 6 then return "73843" .. d end
 end
 local function dial_ext(target, cid)
-    if not target or target == "" then return app.Hangup(1) end
+    if (target or "") == "" then return app.Hangup(1) end
     if cid then channel.CALLERID("num"):set(cid) end
     local contacts = channel.PJSIP_DIAL_CONTACTS(target):get()
-    if not contacts or contacts == "" then return app.Hangup(20) end
+    if (contacts or "") == "" then return app.Hangup(20) end
     app.Dial(contacts, 30, "Tt")
 end
 hints = { internal = {} }; for i = 501, 520 do hints.internal["" .. i] = "PJSIP/" .. i end
@@ -26,15 +26,15 @@ extensions = {
             if not dialed then return app.Hangup(1) end
             if forbidden_outbound[dialed] then return app.Hangup(21) end
             local trunk = channel.OUTBOUND_TRUNK:get()
-            if not trunk or trunk == "" then return app.Hangup(38) end
+            if (trunk or "") == "" then return app.Hangup(38) end
             channel.CALLERID("name"):set(""); channel.CALLERID("num"):set(trunk)
             app.Dial("PJSIP/" .. dialed .. "@" .. trunk, 30, "Tt")
         end,
     },
     external = {
         ["_."] = function()
-            local cid = channel.CALLERID("num"):get()
-            if not cid or cid == "" or blacklist[cid] then return app.Hangup(21) end
+            local cid = channel.CALLERID("num"):get() or ""
+            if cid == "" or blacklist[cid] then return app.Hangup(21) end
             dial_ext(channel.INCOMING_TARGET:get(), "+" .. cid)
         end,
     },
