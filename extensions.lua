@@ -5,10 +5,12 @@ local forbidden_outbound = ok and lists.forbidden_outbound or {}
 local function normalize_outbound(num)
     local d = num:gsub("%D+", "")
     if d == "112" then return "73843321515" end
+    if #d == 6 then return "73843" .. d end
     if #d == 11 then
-        if d:byte(1) == 55 then return d end
-        if d:byte(1) == 56 then return "7" .. d:sub(2) end
-    elseif #d == 6 then return "73843" .. d end
+        local first = d:byte(1)
+        if first == 55 then return d end
+        if first == 56 then return "7" .. d:sub(2) end
+    end
 end
 local function dial_ext(target, cid)
     if (target or "") == "" then return app.Hangup(1) end
