@@ -1,8 +1,9 @@
 package.path = package.path .. ";/etc/asterisk/?.lua"
 local ok, lists = pcall(require, "lists")
-local blacklist = ok and lists.blacklist or {}
-local forbidden_outbound = ok and lists.forbidden_outbound or {}
-local dial_codes = { BUSY = 21, NOANSWER = 19, CONGESTION = 34, CHANUNAVAIL = 34 }
+if not ok then pcall(app.Log, "ERROR", "lists.lua load failed: " .. tostring(lists)) end
+local blacklist          = (ok and type(lists) == "table" and type(lists.blacklist)          == "table") and lists.blacklist          or {}
+local forbidden_outbound = (ok and type(lists) == "table" and type(lists.forbidden_outbound) == "table") and lists.forbidden_outbound or {}
+local dial_codes = { BUSY = 17, NOANSWER = 19, CONGESTION = 34, CHANUNAVAIL = 34 }
 local function normalize_outbound(num)
     local d = num:gsub("%D+", "")
     if d == "112" then return "73843321515" end
@@ -18,7 +19,7 @@ local function dial_ext(target, cid)
     if cid then channel.CALLERID("num"):set(cid) end
     local contacts = channel.PJSIP_DIAL_CONTACTS(target):get()
     if (contacts or "") == "" then return app.Hangup(20) end
-    app.Dial(contacts, 30, "Tt")
+    app.Dial(contacts, 30)
     return app.Hangup(dial_codes[channel.DIALSTATUS:get()] or 16)
 end
 local function handle_internal(_, e) return dial_ext(e) end
@@ -29,7 +30,7 @@ local function handle_outbound(_, e)
     local trunk = channel.OUTBOUND_TRUNK:get()
     if (trunk or "") == "" then return app.Hangup(38) end
     channel.CALLERID("name"):set(""); channel.CALLERID("num"):set(trunk)
-    app.Dial("PJSIP/" .. dialed .. "@" .. trunk, 30, "Tt")
+    app.Dial("PJSIP/" .. dialed .. "@" .. trunk, 30)
 end
 hints = { internal = {} }; for i = 501, 525 do hints.internal["" .. i] = "PJSIP/" .. i end
 extensions = {
@@ -46,8 +47,13 @@ extensions = {
     external = {
         ["_X."] = function()
             local cid = channel.CALLERID("num"):get() or ""
-            if cid == "" or blacklist[cid] then return app.Hangup(21) end
-            return dial_ext(channel.INCOMING_TARGET:get(), "+" .. cid)
+            if cid == "" or cid:match("%D") or blacklist[cid] then return app.Hangup(21) end
+            local target = channel.INCOMING_TARGET:get()
+            if not target or target == "" then
+                app.Log("ERROR", "INCOMING_TARGET not set for CID: " .. cid)
+                return app.Hangup(28)
+            end
+            return dial_ext(target, "+" .. cid)
         end,
     },
 }
